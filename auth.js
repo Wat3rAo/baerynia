@@ -36,7 +36,7 @@ window.Auth = {
 
   async loadProfile() {
     if (!this.currentUser) return;
-    const { data } = await supabase
+    const { data } = await sb
       .from('profiles').select('*').eq('id', this.currentUser.id).single();
     this.profile = data;
   },
