@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wat3rao.github.io/baerynia/sitemap.xml
