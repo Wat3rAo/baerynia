@@ -7,6 +7,7 @@ let cart = JSON.parse(localStorage.getItem('baerynia_cart') || '[]');
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('header').innerHTML = renderHeader();
   await Auth.init();
+  Auth.updateUI();
 
   // Check URL params for category
   const params = new URLSearchParams(window.location.search);
