@@ -1,52 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BAERYNIA | Luxury Fashion Brand</title>
-<meta name="description" content="BAERYNIA - Luxury fashion brand offering premium outerwear, tops, bottoms, accessories, footwear and bags.">
-<meta name="keywords" content="BAERYNIA, fashion, luxury, outerwear, tops, bottoms, accessories, footwear, bags, designer">
-<meta name="author" content="BAERYNIA">
-<meta property="og:title" content="BAERYNIA | Luxury Fashion Brand">
-<meta property="og:description" content="Premium fashion collections with modern minimalist design.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://wat3rao.github.io/baerynia/">
-<link rel="canonical" href="https://wat3rao.github.io/baerynia/">
+<title>BAERYNIA</title>
+<meta name="description" content="BAERYNIA - 时尚品牌，提供外套、上装、下装、配饰、鞋履、包袋">
+<meta property="og:title" content="BAERYNIA">
+<meta property="og:description" content="Premium fashion with modern minimalist design.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-  <div class="logo"><a href="#" onclick="showPage('home');return false;">BAERYNIA</a></div>
-  <nav class="nav" id="nav"></nav>
-  <div class="header-actions">
-    <button onclick="toggleSearch()" data-i18n="search">SEARCH</button>
-    <div class="lang-switcher">
-      <button onclick="toggleLangDropdown()" id="langBtn">EN</button>
-      <div class="lang-dropdown" id="langDropdown">
-        <button onclick="setLang('en')">English</button>
-        <button onclick="setLang('zh')">中文</button>
-        <button onclick="setLang('ja')">日本語</button>
-      </div>
-    </div>
-    <button onclick="openCart()">BAG<span class="cart-count" id="cartCount">0</span></button>
-  </div>
-</header>
+<div id="header"></div>
 
 <!-- HERO -->
 <section class="hero" id="heroSection">
   <div class="hero-bg"></div>
   <div class="hero-content">
     <h1>BAERYNIA</h1>
-    <p data-i18n="hero_subtitle">FALL / WINTER 2026 COLLECTION</p>
-    <button class="hero-btn" onclick="showPage('all')" data-i18n="shop_now">SHOP NOW</button>
+    <p>2026 秋冬系列</p>
+    <button class="hero-btn" onclick="showPage('all')">立即选购</button>
   </div>
 </section>
 
 <!-- PRODUCT GRID -->
 <div id="productSection" style="display:none;">
-  <h2 class="section-title" id="sectionTitle">ALL</h2>
+  <h2 class="section-title" id="sectionTitle">全部</h2>
   <div class="product-grid" id="productGrid"></div>
 </div>
 
@@ -56,23 +35,23 @@
 <!-- CART DRAWER -->
 <div class="cart-drawer" id="cartDrawer">
   <div class="cart-header">
-    <h2 data-i18n="shopping_bag">SHOPPING BAG</h2>
+    <h2>购物袋</h2>
     <button class="cart-close" onclick="closeCart()">&times;</button>
   </div>
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-footer">
     <div class="cart-total">
-      <span data-i18n="total">Total</span>
+      <span>总计</span>
       <span id="cartTotal">¥0</span>
     </div>
-    <button class="cart-checkout" id="checkoutBtn" onclick="checkout()" data-i18n="checkout">CHECKOUT</button>
+    <button class="btn-primary btn-full" id="checkoutBtn" onclick="goCheckout()">去结算</button>
   </div>
 </div>
 
 <!-- SEARCH OVERLAY -->
 <div class="search-overlay" id="searchOverlay">
   <div class="search-header">
-    <input type="text" class="search-input" id="searchInput" placeholder="SEARCH..." oninput="doSearch(this.value)">
+    <input type="text" class="search-input" id="searchInput" placeholder="搜索产品..." oninput="doSearch(this.value)">
     <button class="search-close" onclick="toggleSearch()">&times;</button>
   </div>
   <div class="search-results" id="searchResults"></div>
@@ -82,37 +61,31 @@
 <footer class="footer">
   <div class="footer-grid">
     <div class="footer-col">
-      <h3 data-i18n="customer_care">Customer Care</h3>
-      <a href="#" data-i18n="contact">Contact</a>
-      <a href="#" data-i18n="shipping">Shipping</a>
-      <a href="#" data-i18n="returns">Returns</a>
-      <a href="#" data-i18n="faq">FAQ</a>
+      <h3>客户服务</h3>
+      <a href="#">联系我们</a><a href="#">配送信息</a><a href="#">退换货</a><a href="#">常见问题</a>
     </div>
     <div class="footer-col">
-      <h3 data-i18n="about">About</h3>
-      <a href="#" data-i18n="our_story">Our Story</a>
-      <a href="#" data-i18n="sustainability">Sustainability</a>
-      <a href="#" data-i18n="careers">Careers</a>
+      <h3>关于</h3>
+      <a href="#">品牌故事</a><a href="#">可持续发展</a><a href="#">招贤纳士</a>
     </div>
     <div class="footer-col">
-      <h3 data-i18n="legal">Legal</h3>
-      <a href="#" data-i18n="privacy">Privacy Policy</a>
-      <a href="#" data-i18n="terms">Terms of Service</a>
-      <a href="#" data-i18n="cookies">Cookies</a>
+      <h3>法律条款</h3>
+      <a href="#">隐私政策</a><a href="#">服务条款</a><a href="#">Cookie 政策</a>
     </div>
     <div class="footer-col">
-      <h3 data-i18n="follow">Follow</h3>
-      <a href="#">Instagram</a>
-      <a href="#">Weibo</a>
-      <a href="#">X</a>
+      <h3>关注我们</h3>
+      <a href="#">Instagram</a><a href="#">Weibo</a><a href="#">X</a>
     </div>
   </div>
   <div class="footer-bottom">© 2026 BAERYNIA. All rights reserved.</div>
 </footer>
 
-<!-- NOTIFICATION -->
 <div class="notification" id="notification"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="auth.js"></script>
+<script src="products.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

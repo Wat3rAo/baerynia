@@ -1,0 +1,152 @@
+// === BAERYNIA Auth Module ===
+
+const Auth = {
+  currentUser: null,
+
+  async init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      this.currentUser = session.user;
+      await this.loadProfile();
+    }
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        this.currentUser = session.user;
+        await this.loadProfile();
+      } else {
+        this.currentUser = null;
+        this.profile = null;
+      }
+      this.updateUI();
+    });
+    this.updateUI();
+  },
+
+  async loadProfile() {
+    if (!this.currentUser) return;
+    const { data } = await supabase
+      .from('profiles').select('*').eq('id', this.currentUser.id).single();
+    this.profile = data;
+  },
+
+  async register(email, password, fullName) {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName } }
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async login(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  },
+
+  async logout() {
+    await supabase.auth.signOut();
+    this.currentUser = null;
+    this.profile = null;
+    this.updateUI();
+    window.location.href = 'index.html';
+  },
+
+  isLoggedIn() {
+    return !!this.currentUser;
+  },
+
+  updateUI() {
+    document.querySelectorAll('.auth-only').forEach(el => {
+      el.style.display = this.isLoggedIn() ? '' : 'none';
+    });
+    document.querySelectorAll('.guest-only').forEach(el => {
+      el.style.display = this.isLoggedIn() ? 'none' : '';
+    });
+    const userNameEl = document.getElementById('userName');
+    if (userNameEl && this.profile) {
+      userNameEl.textContent = this.profile.full_name || this.currentUser.email;
+    }
+  },
+
+  requireLogin() {
+    if (!this.isLoggedIn()) {
+      window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+      return false;
+    }
+    return true;
+  }
+};
+
+// Common header/footer renderer
+function renderHeader(activePage) {
+  const lang = localStorage.getItem('baerynia_lang') || 'zh';
+  const langLabel = { en: 'EN', zh: '中', ja: '日' };
+  const T = (key) => (I18N[lang] && I18N[lang][key]) || key;
+
+  return `
+  <header class="header">
+    <div class="logo"><a href="index.html">BAERYNIA</a></div>
+    <nav class="nav">
+      ${['all','outerwear','tops','bottoms','accessories','footwear','bags'].map(cat =>
+        `<a href="index.html?cat=${cat}" ${activePage===cat?'class="active"':''}>${T(cat)}</a>`
+      ).join('')}
+    </nav>
+    <div class="header-actions">
+      <button onclick="toggleSearch()" class="header-btn">${T('search')}</button>
+      <div class="lang-switcher">
+        <button onclick="toggleLangDropdown()" class="header-btn" id="langBtn">${langLabel[lang]}</button>
+        <div class="lang-dropdown" id="langDropdown">
+          <button onclick="setLang('en')">English</button>
+          <button onclick="setLang('zh')">中文</button>
+          <button onclick="setLang('ja')">日本語</button>
+        </div>
+      </div>
+      <div class="auth-only" style="display:none">
+        <div class="user-menu" onclick="toggleUserMenu()">
+          <button class="header-btn" id="userName">...</button>
+          <div class="user-dropdown" id="userDropdown">
+            <a href="account.html">${lang==='zh'?'我的账户':'My Account'}</a>
+            <a href="orders.html">${lang==='zh'?'我的订单':'My Orders'}</a>
+            <button onclick="Auth.logout()">${lang==='zh'?'退出':'Logout'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="guest-only">
+        <a href="login.html" class="header-btn">${lang==='zh'?'登录':'Login'}</a>
+      </div>
+      <button onclick="openCart()" class="header-btn cart-btn">
+        ${T('bag')}<span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>`;
+}
+
+function toggleUserMenu() {
+  document.getElementById('userDropdown')?.classList.toggle('open');
+}
+
+function toggleLangDropdown() {
+  document.getElementById('langDropdown')?.classList.toggle('open');
+}
+
+function setLang(lang) {
+  localStorage.setItem('baerynia_lang', lang);
+  location.reload();
+}
+
+function toggleSearch() {
+  document.getElementById('searchOverlay')?.classList.toggle('open');
+  if (document.getElementById('searchOverlay')?.classList.contains('open')) {
+    document.getElementById('searchInput')?.focus();
+  }
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.lang-switcher')) {
+    document.getElementById('langDropdown')?.classList.remove('open');
+  }
+  if (!e.target.closest('.user-menu')) {
+    document.getElementById('userDropdown')?.classList.remove('open');
+  }
+});

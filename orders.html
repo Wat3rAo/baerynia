@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的订单 - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="orders-page">
+  <div class="orders-container">
+    <h1>我的订单</h1>
+
+    <div class="order-tabs">
+      <button class="tab active" onclick="filterOrders('all', this)">全部</button>
+      <button class="tab" onclick="filterOrders('pending', this)">待付款</button>
+      <button class="tab" onclick="filterOrders('paid', this)">待发货</button>
+      <button class="tab" onclick="filterOrders('shipped', this)">已发货</button>
+      <button class="tab" onclick="filterOrders('delivered', this)">已完成</button>
+    </div>
+
+    <div id="orderList" class="order-list">
+      <p class="text-muted">加载中...</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="auth.js"></script>
+<script>
+  const STATUS_MAP = {
+    pending: '待付款', paid: '待发货', processing: '处理中',
+    shipped: '已发货', delivered: '已完成', cancelled: '已取消'
+  };
+  const STATUS_CLASS = {
+    pending: 'status-pending', paid: 'status-paid', processing: 'status-paid',
+    shipped: 'status-shipped', delivered: 'status-delivered', cancelled: 'status-cancelled'
+  };
+  let allOrders = [];
+
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init().then(() => {
+    if (!Auth.requireLogin()) return;
+    loadOrders();
+  });
+
+  async function loadOrders() {
+    const { data: orders } = await supabase.from('orders').select('*')
+      .eq('user_id', Auth.currentUser.id).order('created_at', { ascending: false });
+
+    if (!orders || orders.length === 0) {
+      document.getElementById('orderList').innerHTML = `
+        <div class="empty-state">
+          <p>暂无订单</p>
+          <a href="index.html" class="btn-secondary">去购物</a>
+        </div>`;
+      return;
+    }
+
+    for (let order of orders) {
+      const { data: items } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+      order.items = items || [];
+    }
+    allOrders = orders;
+    renderOrders(orders);
+  }
+
+  function filterOrders(status, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = status === 'all' ? allOrders : allOrders.filter(o => o.status === status);
+    renderOrders(filtered);
+  }
+
+  function renderOrders(orders) {
+    const list = document.getElementById('orderList');
+    if (orders.length === 0) {
+      list.innerHTML = '<p class="text-muted">该状态下暂无订单</p>';
+      return;
+    }
+    list.innerHTML = orders.map(order => `
+      <div class="order-card">
+        <div class="order-header">
+          <span class="order-number">订单号: ${order.order_number}</span>
+          <span class="order-date">${new Date(order.created_at).toLocaleDateString('zh-CN')}</span>
+          <span class="order-status ${STATUS_CLASS[order.status]}">${STATUS_MAP[order.status]}</span>
+        </div>
+        <div class="order-items">
+          ${order.items.map(item => `
+            <div class="order-item">
+              <img src="${item.product_image}" alt="${item.product_name_zh || item.product_name}">
+              <div class="order-item-info">
+                <div class="order-item-name">${item.product_name_zh || item.product_name}</div>
+                <div class="order-item-price">¥${item.price} × ${item.quantity}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="order-footer">
+          <span class="order-total">共 ${order.items.reduce((s,i)=>s+i.quantity,0)} 件 · 合计 <strong>¥${order.total}</strong></span>
+          <div class="order-actions">
+            ${order.status === 'pending' ? '<button class="btn-primary btn-sm" onclick="payOrder(\'' + order.id + '\')">去付款</button>' : ''}
+            ${order.status === 'shipped' ? '<button class="btn-secondary btn-sm" onclick="confirmReceive(\'' + order.id + '\')">确认收货</button>' : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function payOrder(orderId) {
+    if (confirm('模拟支付：确认已完成支付？')) {
+      await supabase.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', orderId);
+      loadOrders();
+    }
+  }
+
+  async function confirmReceive(orderId) {
+    if (confirm('确认已收到商品？')) {
+      await supabase.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', orderId);
+      loadOrders();
+    }
+  }
+</script>
+</body>
+</html>

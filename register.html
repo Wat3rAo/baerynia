@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注册 - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="auth-page">
+  <div class="auth-container">
+    <h1>注册</h1>
+    <form id="registerForm" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label>姓名</label>
+        <input type="text" id="fullName" required placeholder="你的姓名">
+      </div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="email" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="password" required placeholder="至少6位密码" minlength="6">
+      </div>
+      <div class="form-group">
+        <label>确认密码</label>
+        <input type="password" id="confirmPassword" required placeholder="再次输入密码" minlength="6">
+      </div>
+      <div id="registerError" class="form-error"></div>
+      <div id="registerSuccess" class="form-success"></div>
+      <button type="submit" class="btn-primary" id="registerBtn">注册</button>
+    </form>
+    <p class="auth-link">已有账户？ <a href="login.html">登录</a></p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="auth.js"></script>
+<script>
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init();
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const btn = document.getElementById('registerBtn');
+    const err = document.getElementById('registerError');
+    const ok = document.getElementById('registerSuccess');
+    btn.disabled = true;
+    btn.textContent = '注册中...';
+    err.textContent = '';
+    ok.textContent = '';
+
+    const pw = document.getElementById('password').value;
+    const pw2 = document.getElementById('confirmPassword').value;
+    if (pw !== pw2) {
+      err.textContent = '两次密码不一致';
+      btn.disabled = false;
+      btn.textContent = '注册';
+      return;
+    }
+
+    try {
+      await Auth.register(
+        document.getElementById('email').value,
+        pw,
+        document.getElementById('fullName').value
+      );
+      ok.textContent = '注册成功！请检查邮箱确认链接，然后登录。';
+      btn.textContent = '注册成功';
+    } catch (error) {
+      err.textContent = error.message === 'User already registered'
+        ? '该邮箱已注册' : error.message;
+      btn.disabled = false;
+      btn.textContent = '注册';
+    }
+  }
+</script>
+</body>
+</html>

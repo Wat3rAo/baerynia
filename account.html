@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的账户 - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="account-page">
+  <div class="account-container">
+    <h1>我的账户</h1>
+
+    <div class="account-grid">
+      <!-- Profile Section -->
+      <div class="account-card">
+        <h2>个人信息</h2>
+        <form id="profileForm" onsubmit="updateProfile(event)">
+          <div class="form-group">
+            <label>姓名</label>
+            <input type="text" id="fullName" placeholder="你的姓名">
+          </div>
+          <div class="form-group">
+            <label>手机号</label>
+            <input type="tel" id="phone" placeholder="13800138000">
+          </div>
+          <div class="form-group">
+            <label>邮箱</label>
+            <input type="email" id="email" disabled>
+          </div>
+          <div id="profileMsg" class="form-success"></div>
+          <button type="submit" class="btn-secondary">保存</button>
+        </form>
+      </div>
+
+      <!-- Addresses Section -->
+      <div class="account-card">
+        <h2>收货地址</h2>
+        <div id="addressList"></div>
+        <button class="btn-secondary" onclick="showAddressForm()">+ 添加新地址</button>
+        <div id="addressForm" style="display:none" class="address-form">
+          <form onsubmit="saveAddress(event)">
+            <div class="form-row">
+              <div class="form-group"><label>收件人</label><input type="text" id="addrName" required></div>
+              <div class="form-group"><label>手机号</label><input type="tel" id="addrPhone" required></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>省/市</label><input type="text" id="addrProvince" required placeholder="如：北京市"></div>
+              <div class="form-group"><label>区/县</label><input type="text" id="addrDistrict" placeholder="如：朝阳区"></div>
+            </div>
+            <div class="form-group"><label>详细地址</label><input type="text" id="addrDetail" required placeholder="街道、楼栋、门牌号"></div>
+            <div class="form-group">
+              <label><input type="checkbox" id="addrDefault"> 设为默认地址</label>
+            </div>
+            <div class="form-row">
+              <button type="submit" class="btn-secondary">保存地址</button>
+              <button type="button" class="btn-ghost" onclick="hideAddressForm()">取消</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="account-links">
+      <a href="orders.html" class="account-link-card">
+        <span class="link-icon">📦</span>
+        <span>我的订单</span>
+      </a>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="auth.js"></script>
+<script>
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init().then(() => {
+    if (!Auth.requireLogin()) return;
+    loadProfile();
+    loadAddresses();
+  });
+
+  async function loadProfile() {
+    const p = Auth.profile;
+    if (p) {
+      document.getElementById('fullName').value = p.full_name || '';
+      document.getElementById('phone').value = p.phone || '';
+      document.getElementById('email').value = p.email || '';
+    }
+  }
+
+  async function updateProfile(e) {
+    e.preventDefault();
+    const { error } = await supabase.from('profiles').update({
+      full_name: document.getElementById('fullName').value,
+      phone: document.getElementById('phone').value
+    }).eq('id', Auth.currentUser.id);
+    const msg = document.getElementById('profileMsg');
+    msg.textContent = error ? '保存失败: ' + error.message : '保存成功';
+    await Auth.loadProfile();
+  }
+
+  async function loadAddresses() {
+    const { data } = await supabase.from('addresses').select('*')
+      .eq('user_id', Auth.currentUser.id).order('is_default', { ascending: false });
+    const list = document.getElementById('addressList');
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p class="text-muted">暂无收货地址</p>';
+      return;
+    }
+    list.innerHTML = data.map(a => `
+      <div class="address-card ${a.is_default ? 'default' : ''}">
+        <div><strong>${a.name}</strong> ${a.phone} ${a.is_default ? '<span class="tag">默认</span>' : ''}</div>
+        <div class="text-muted">${a.province} ${a.city} ${a.district} ${a.detail}</div>
+        <div class="address-actions">
+          ${!a.is_default ? `<button onclick="setDefault('${a.id}')">设为默认</button>` : ''}
+          <button onclick="deleteAddress('${a.id}')">删除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function showAddressForm() { document.getElementById('addressForm').style.display = 'block'; }
+  function hideAddressForm() { document.getElementById('addressForm').style.display = 'none'; }
+
+  async function saveAddress(e) {
+    e.preventDefault();
+    if (document.getElementById('addrDefault').checked) {
+      await supabase.from('addresses').update({ is_default: false }).eq('user_id', Auth.currentUser.id);
+    }
+    const { error } = await supabase.from('addresses').insert({
+      user_id: Auth.currentUser.id,
+      name: document.getElementById('addrName').value,
+      phone: document.getElementById('addrPhone').value,
+      province: document.getElementById('addrProvince').value,
+      city: '',
+      district: document.getElementById('addrDistrict').value,
+      detail: document.getElementById('addrDetail').value,
+      is_default: document.getElementById('addrDefault').checked
+    });
+    if (!error) { hideAddressForm(); loadAddresses(); e.target.reset(); }
+  }
+
+  async function setDefault(id) {
+    await supabase.from('addresses').update({ is_default: false }).eq('user_id', Auth.currentUser.id);
+    await supabase.from('addresses').update({ is_default: true }).eq('id', id);
+    loadAddresses();
+  }
+
+  async function deleteAddress(id) {
+    if (confirm('确定删除该地址？')) {
+      await supabase.from('addresses').delete().eq('id', id);
+      loadAddresses();
+    }
+  }
+</script>
+</body>
+</html>
