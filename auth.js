@@ -1,5 +1,17 @@
 // === BAERYNIA Auth Module ===
 
+const I18N = {
+  en: { search:'SEARCH', all:'ALL', outerwear:'OUTERWEAR', tops:'TOPS', bottoms:'BOTTOMS',
+    accessories:'ACCESSORIES', footwear:'FOOTWEAR', bags:'BAGS', bag:'BAG',
+    add_to_bag:'ADD TO BAG', total:'Total', checkout:'CHECKOUT', shopping_bag:'SHOPPING BAG' },
+  zh: { search:'搜索', all:'全部', outerwear:'外套', tops:'上装', bottoms:'下装',
+    accessories:'配饰', footwear:'鞋履', bags:'包袋', bag:'购物袋',
+    add_to_bag:'加入购物袋', total:'总计', checkout:'结算', shopping_bag:'购物袋' },
+  ja: { search:'検索', all:'すべて', outerwear:'アウター', tops:'トップス', bottoms:'ボトムス',
+    accessories:'アクセサリー', footwear:'フットウェア', bags:'バッグ', bag:'バッグ',
+    add_to_bag:'バッグに追加', total:'合計', checkout:'チェックアウト', shopping_bag:'ショッピングバッグ' }
+};
+
 const Auth = {
   currentUser: null,
 
