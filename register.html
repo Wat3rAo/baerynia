@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新規登録 - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="auth-page">
+  <div class="auth-container">
+    <h1>新規登録</h1>
+    <form id="registerForm" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label>お名前</label>
+        <input type="text" id="fullName" required placeholder="你的お名前">
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="email" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="password" required placeholder="至少6位パスワード" minlength="6">
+      </div>
+      <div class="form-group">
+        <label>确认パスワード</label>
+        <input type="password" id="confirmPassword" required placeholder="再次输入パスワード" minlength="6">
+      </div>
+      <div id="registerError" class="form-error"></div>
+      <div id="registerSuccess" class="form-success"></div>
+      <button type="submit" class="btn-primary" id="registerBtn">新規登録</button>
+    </form>
+    <p class="auth-link">アカウントをお持ちの方 <a href="login.html">ログイン</a></p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=2"></script>
+<script src="auth.js?v=2"></script>
+<script>
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init().then(() => Auth.updateUI());
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const btn = document.getElementById('registerBtn');
+    const err = document.getElementById('registerError');
+    const ok = document.getElementById('registerSuccess');
+    btn.disabled = true;
+    btn.textContent = '新規登録中...';
+    err.textContent = '';
+    ok.textContent = '';
+
+    const pw = document.getElementById('password').value;
+    const pw2 = document.getElementById('confirmPassword').value;
+    if (pw !== pw2) {
+      err.textContent = '两次パスワード不一致';
+      btn.disabled = false;
+      btn.textContent = '新規登録';
+      return;
+    }
+
+    try {
+      await Auth.register(
+        document.getElementById('email').value,
+        pw,
+        document.getElementById('fullName').value
+      );
+      ok.textContent = '新規登録成功！请检查メールアドレス确认链接，然后ログイン。';
+      btn.textContent = '新規登録成功';
+    } catch (error) {
+      err.textContent = error.message === 'User already registered'
+        ? '该メールアドレス已新規登録' : error.message;
+      btn.disabled = false;
+      btn.textContent = '新規登録';
+    }
+  }
+</script>
+</body>
+</html>

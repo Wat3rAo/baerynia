@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>購入手続き - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="checkout-page">
+  <div class="checkout-container">
+    <h1>購入手続き</h1>
+
+    <div class="checkout-grid">
+      <div class="checkout-main">
+        <!-- Shipping Address -->
+        <section class="checkout-section">
+          <h2>お届け先住所</h2>
+          <div id="addressSection">
+            <p class="text-muted">住所を読み込み中...</p>
+          </div>
+          <div id="newAddressForm" style="display:none">
+            <form onsubmit="saveNewAddress(event)">
+              <div class="form-row">
+                <div class="form-group"><label>お名前</label><input type="text" id="addrName" required></div>
+                <div class="form-group"><label>電話番号</label><input type="tel" id="addrPhone" required></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>都道府県</label><input type="text" id="addrProvince" required placeholder="如：北京市"></div>
+                <div class="form-group"><label>市区町村</label><input type="text" id="addrDistrict" placeholder="如：朝阳区"></div>
+              </div>
+              <div class="form-group"><label>住所詳細</label><input type="text" id="addrDetail" required></div>
+              <div class="form-row">
+                <button type="submit" class="btn-secondary">保存</button>
+                <button type="button" class="btn-ghost" onclick="hideNewAddress()">キャンセル</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Payment Method -->
+        <section class="checkout-section">
+          <h2>お支払い方法</h2>
+          <div class="payment-options">
+            <label class="payment-option selected">
+              <input type="radio" name="payment" value="alipay" checked onchange="selectPayment(this)">
+              <span class="payment-label">Alipay</span>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="payment" value="wechat" onchange="selectPayment(this)">
+              <span class="payment-label">WeChat Pay</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Order Note -->
+        <section class="checkout-section">
+          <h2>注文メモ</h2>
+          <textarea id="orderNote" placeholder="任意：特別なご要望がございましたらご記入ください" rows="3"></textarea>
+        </section>
+      </div>
+
+      <!-- Order Summary -->
+      <aside class="checkout-sidebar">
+        <div class="checkout-summary">
+          <h2>注文概要</h2>
+          <div id="checkoutItems"></div>
+          <div class="summary-line"><span>小計</span><span id="subtotal">¥0</span></div>
+          <div class="summary-line"><span>送料</span><span>免送料</span></div>
+          <div class="summary-line total"><span>お支払い総額</span><span id="totalPrice">¥0</span></div>
+          <button class="btn-primary btn-full" id="submitOrderBtn" onclick="submitOrder()">注文を確定する</button>
+          <p class="text-muted text-sm" style="margin-top:12px;text-align:center">
+            ご注文により利用規約に同意したことになります
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=2"></script>
+<script src="auth.js?v=2"></script>
+<script src="products.js?v=2"></script>
+<script>
+  let selectedAddress = null;
+  let cart = JSON.parse(localStorage.getItem('baerynia_cart') || '[]');
+
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init().then(() => {
+    if (!Auth.requireLogin()) return;
+    if (cart.length === 0) { window.location.href = 'index.html'; return; }
+    loadAddresses();
+    renderCheckoutItems();
+  });
+
+  async function loadAddresses() {
+    const { data } = await sb.from('addresses').select('*')
+      .eq('user_id', Auth.currentUser.id).order('is_default', { ascending: false });
+    const section = document.getElementById('addressSection');
+
+    if (!data || data.length === 0) {
+      section.innerHTML = '<p class="text-muted">暂无お届け先住所，请添加</p><button class="btn-secondary" onclick="showNewAddress()">+ 住所を追加</button>';
+      return;
+    }
+
+    selectedAddress = data.find(a => a.is_default) || data[0];
+    section.innerHTML = data.map(a => `
+      <div class="address-option ${a.id === selectedAddress.id ? 'selected' : ''}" onclick="selectAddress('${a.id}', this)">
+        <strong>${a.name}</strong> ${a.phone}
+        <div class="text-muted">${a.province} ${a.city} ${a.district} ${a.detail}</div>
+        ${a.is_default ? '<span class="tag">默认</span>' : ''}
+      </div>
+    `).join('') + '<button class="btn-ghost" onclick="showNewAddress()" style="margin-top:8px">+ 使用新地址</button>';
+  }
+
+  function selectAddress(id, el) {
+    selectedAddress = { id };
+    document.querySelectorAll('.address-option').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    // Re-find the address data
+    sb.from('addresses').select('*').eq('id', id).single().then(({ data }) => {
+      selectedAddress = data;
+    });
+  }
+
+  function showNewAddress() { document.getElementById('newAddressForm').style.display = 'block'; }
+  function hideNewAddress() { document.getElementById('newAddressForm').style.display = 'none'; }
+
+  async function saveNewAddress(e) {
+    e.preventDefault();
+    const { data, error } = await sb.from('addresses').insert({
+      user_id: Auth.currentUser.id,
+      name: document.getElementById('addrName').value,
+      phone: document.getElementById('addrPhone').value,
+      province: document.getElementById('addrProvince').value,
+      city: '',
+      district: document.getElementById('addrDistrict').value,
+      detail: document.getElementById('addrDetail').value,
+      is_default: false
+    }).select().single();
+    if (!error) {
+      selectedAddress = data;
+      hideNewAddress();
+      loadAddresses();
+    }
+  }
+
+  function selectPayment(radio) {
+    document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+    radio.closest('.payment-option').classList.add('selected');
+  }
+
+  function renderCheckoutItems() {
+    const container = document.getElementById('checkoutItems');
+    let total = 0;
+    container.innerHTML = cart.map(item => {
+      const p = PRODUCTS.find(x => x.id === item.id);
+      if (!p) return '';
+      const subtotal = p.price * item.qty;
+      total += subtotal;
+      return `<div class="checkout-item">
+        <img src="${p.img}" alt="">
+        <div><div class="item-name">${getProductName(p)}</div><div class="text-muted">×${item.qty}</div></div>
+        <div class="item-price">¥${subtotal.toLocaleString()}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('subtotal').textContent = '¥' + total.toLocaleString();
+    document.getElementById('totalPrice').textContent = '¥' + total.toLocaleString();
+  }
+
+  function getProductName(p) {
+    const lang = localStorage.getItem('baerynia_lang') || 'zh';
+    if (lang === 'zh') return p.name_zh || p.name;
+    if (lang === 'ja') return p.name_ja || p.name;
+    return p.name;
+  }
+
+  async function submitOrder() {
+    if (!selectedAddress) { alert('请选择お届け先住所'); return; }
+    if (cart.length === 0) { alert('カートが空です'); return; }
+
+    const btn = document.getElementById('submitOrderBtn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    // Get full address info
+    let addr = selectedAddress;
+    if (!addr.name) {
+      const { data } = await sb.from('addresses').select('*').eq('id', addr.id).single();
+      addr = data;
+    }
+
+    const payment = document.querySelector('input[name="payment"]:checked').value;
+    const total = cart.reduce((s, item) => {
+      const p = PRODUCTS.find(x => x.id === item.id);
+      return s + (p ? p.price * item.qty : 0);
+    }, 0);
+
+    const orderNumber = 'BN' + Date.now().toString(36).toUpperCase();
+
+    // Create order
+    const { data: order, error } = await sb.from('orders').insert({
+      user_id: Auth.currentUser.id,
+      order_number: orderNumber,
+      status: 'pending',
+      total: total,
+      shipping_name: addr.name,
+      shipping_phone: addr.phone,
+      shipping_address: `${addr.province} ${addr.city || ''} ${addr.district || ''} ${addr.detail}`,
+      payment_method: payment,
+      note: document.getElementById('orderNote').value
+    }).select().single();
+
+    if (error) {
+      alert('注文に失敗: ' + error.message);
+      btn.disabled = false;
+      btn.textContent = '注文を確定する';
+      return;
+    }
+
+    // Create order items
+    const items = cart.map(item => {
+      const p = PRODUCTS.find(x => x.id === item.id);
+      return {
+        order_id: order.id,
+        product_id: p.id,
+        product_name: p.name,
+        product_name_zh: p.name_zh || '',
+        product_name_ja: p.name_ja || '',
+        product_image: p.img,
+        price: p.price,
+        quantity: item.qty
+      };
+    });
+    await sb.from('order_items').insert(items);
+
+    // Clear cart
+    localStorage.setItem('baerynia_cart', '[]');
+
+    // Simulate payment
+    if (confirm(`注文が完了しました！\n注文番号: ${orderNumber}\n金額: ¥${total.toLocaleString()}\n\n今すぐ支払いますか？`)) {
+      await sb.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', order.id);
+      alert('支払いが完了しました！');
+    }
+    window.location.href = 'orders.html';
+  }
+</script>
+</body>
+</html>

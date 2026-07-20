@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注文履歴 - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="orders-page">
+  <div class="orders-container">
+    <h1>注文履歴</h1>
+
+    <div class="order-tabs">
+      <button class="tab active" onclick="filterOrders('all', this)">すべて</button>
+      <button class="tab" onclick="filterOrders('pending', this)">未払い</button>
+      <button class="tab" onclick="filterOrders('paid', this)">発送準備中</button>
+      <button class="tab" onclick="filterOrders('shipped', this)">発送済み</button>
+      <button class="tab" onclick="filterOrders('delivered', this)">完了</button>
+    </div>
+
+    <div id="orderList" class="order-list">
+      <p class="text-muted">読み込み中...</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=2"></script>
+<script src="auth.js?v=2"></script>
+<script>
+  const STATUS_MAP = {
+    pending: '未払い', paid: '発送準備中', processing: '処理中',
+    shipped: '発送済み', delivered: '完了', cancelled: 'キャンセル'
+  };
+  const STATUS_CLASS = {
+    pending: 'status-pending', paid: 'status-paid', processing: 'status-paid',
+    shipped: 'status-shipped', delivered: 'status-delivered', cancelled: 'status-cancelled'
+  };
+  let allOrders = [];
+
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init().then(() => {
+    if (!Auth.requireLogin()) return;
+    loadOrders();
+  });
+
+  async function loadOrders() {
+    const { data: orders } = await sb.from('orders').select('*')
+      .eq('user_id', Auth.currentUser.id).order('created_at', { ascending: false });
+
+    if (!orders || orders.length === 0) {
+      document.getElementById('orderList').innerHTML = `
+        <div class="empty-state">
+          <p>注文はありません</p>
+          <a href="index.html" class="btn-secondary">買い物をする</a>
+        </div>`;
+      return;
+    }
+
+    for (let order of orders) {
+      const { data: items } = await sb.from('order_items').select('*').eq('order_id', order.id);
+      order.items = items || [];
+    }
+    allOrders = orders;
+    renderOrders(orders);
+  }
+
+  function filterOrders(status, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = status === 'all' ? allOrders : allOrders.filter(o => o.status === status);
+    renderOrders(filtered);
+  }
+
+  function renderOrders(orders) {
+    const list = document.getElementById('orderList');
+    if (orders.length === 0) {
+      list.innerHTML = '<p class="text-muted">该状态下注文はありません</p>';
+      return;
+    }
+    list.innerHTML = orders.map(order => `
+      <div class="order-card">
+        <div class="order-header">
+          <span class="order-number">注文番号: ${order.order_number}</span>
+          <span class="order-date">${new Date(order.created_at).toLocaleDateString('zh-CN')}</span>
+          <span class="order-status ${STATUS_CLASS[order.status]}">${STATUS_MAP[order.status]}</span>
+        </div>
+        <div class="order-items">
+          ${order.items.map(item => `
+            <div class="order-item">
+              <img src="${item.product_image}" alt="${item.product_name_zh || item.product_name}">
+              <div class="order-item-info">
+                <div class="order-item-name">${item.product_name_zh || item.product_name}</div>
+                <div class="order-item-price">¥${item.price} × ${item.quantity}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="order-footer">
+          <span class="order-total">計 ${order.items.reduce((s,i)=>s+i.quantity,0)} 点 · 合計 <strong>¥${order.total}</strong></span>
+          <div class="order-actions">
+            ${order.status === 'pending' ? '<button class="btn-primary btn-sm" onclick="payOrder(\'' + order.id + '\')">支払う</button>' : ''}
+            ${order.status === 'shipped' ? '<button class="btn-secondary btn-sm" onclick="confirmReceive(\'' + order.id + '\')">受取確認</button>' : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function payOrder(orderId) {
+    if (confirm('模拟支付：确认完了支付？')) {
+      await sb.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', orderId);
+      loadOrders();
+    }
+  }
+
+  async function confirmReceive(orderId) {
+    if (confirm('商品を受取りましたか？')) {
+      await sb.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', orderId);
+      loadOrders();
+    }
+  }
+</script>
+</body>
+</html>

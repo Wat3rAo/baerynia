@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン - BAERYNIA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="header"></div>
+
+<main class="auth-page">
+  <div class="auth-container">
+    <h1>ログイン</h1>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="email" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="password" required placeholder="输入パスワード" minlength="6">
+      </div>
+      <div id="loginError" class="form-error"></div>
+      <button type="submit" class="btn-primary" id="loginBtn">ログイン</button>
+    </form>
+    <p class="auth-link">アカウントをお持ちでない方 <a href="register.html">新規登録</a></p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js?v=2"></script>
+<script src="auth.js?v=2"></script>
+<script>
+  document.getElementById('header').innerHTML = renderHeader();
+  Auth.init().then(() => Auth.updateUI());
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('loginError');
+    btn.disabled = true;
+    btn.textContent = 'ログイン中...';
+    err.textContent = '';
+    try {
+      await Auth.login(
+        document.getElementById('email').value,
+        document.getElementById('password').value
+      );
+      const params = new URLSearchParams(window.location.search);
+      window.location.href = params.get('redirect') || 'index.html';
+    } catch (error) {
+      err.textContent = error.message === 'Invalid login credentials'
+        ? 'メールアドレス或パスワード错误' : error.message;
+      btn.disabled = false;
+      btn.textContent = 'ログイン';
+    }
+  }
+</script>
+</body>
+</html>
