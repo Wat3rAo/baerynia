@@ -1,6 +1,6 @@
 // === BAERYNIA Products Data ===
 
-const PRODUCTS = [
+window.PRODUCTS = [
   {id:1, name:"Oversized Wool Coat", name_zh:"宽松羊毛大衣", name_ja:"オーバーサイズウールコート",
    category:"outerwear", price:12800, img:"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600&q=80"},
   {id:2, name:"Structured Blazer", name_zh:"结构西装外套", name_ja:"ストラクチャードブレザー",
@@ -51,7 +51,7 @@ const PRODUCTS = [
    category:"bags", price:7800, img:"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80"},
 ];
 
-const CATEGORIES = ["all", "outerwear", "tops", "bottoms", "accessories", "footwear", "bags"];
+window.CATEGORIES = ["all", "outerwear", "tops", "bottoms", "accessories", "footwear", "bags"];
 
 function getProductName(p) {
   const lang = localStorage.getItem('baerynia_lang') || 'zh';

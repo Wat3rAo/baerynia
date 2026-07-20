@@ -1,6 +1,6 @@
 // === BAERYNIA Auth Module ===
 
-const I18N = {
+window.I18N = {
   en: { search:'SEARCH', all:'ALL', outerwear:'OUTERWEAR', tops:'TOPS', bottoms:'BOTTOMS',
     accessories:'ACCESSORIES', footwear:'FOOTWEAR', bags:'BAGS', bag:'BAG',
     add_to_bag:'ADD TO BAG', total:'Total', checkout:'CHECKOUT', shopping_bag:'SHOPPING BAG' },
@@ -12,7 +12,7 @@ const I18N = {
     add_to_bag:'バッグに追加', total:'合計', checkout:'チェックアウト', shopping_bag:'ショッピングバッグ' }
 };
 
-const Auth = {
+window.Auth = {
   currentUser: null,
 
   async init() {
