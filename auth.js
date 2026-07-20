@@ -16,12 +16,12 @@ window.Auth = {
   currentUser: null,
 
   async init() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sb.auth.getSession();
     if (session) {
       this.currentUser = session.user;
       await this.loadProfile();
     }
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    sb.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         this.currentUser = session.user;
         await this.loadProfile();
@@ -42,7 +42,7 @@ window.Auth = {
   },
 
   async register(email, password, fullName) {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await sb.auth.signUp({
       email, password,
       options: { data: { full_name: fullName } }
     });
@@ -51,13 +51,13 @@ window.Auth = {
   },
 
   async login(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   },
 
   async logout() {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     this.currentUser = null;
     this.profile = null;
     this.updateUI();

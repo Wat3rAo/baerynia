@@ -81,9 +81,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js?v=2"></script>
-<script src="auth.js?v=2"></script>
-<script src="products.js?v=2"></script>
+<script src="supabase-client.js?v=3"></script>
+<script src="auth.js?v=3"></script>
+<script src="products.js?v=3"></script>
 <script>
   let selectedAddress = null;
   let cart = JSON.parse(localStorage.getItem('baerynia_cart') || '[]');
@@ -97,7 +97,7 @@
   });
 
   async function loadAddresses() {
-    const { data } = await supabase.from('addresses').select('*')
+    const { data } = await sb.from('addresses').select('*')
       .eq('user_id', Auth.currentUser.id).order('is_default', { ascending: false });
     const section = document.getElementById('addressSection');
 
@@ -121,7 +121,7 @@
     document.querySelectorAll('.address-option').forEach(e => e.classList.remove('selected'));
     el.classList.add('selected');
     // Re-find the address data
-    supabase.from('addresses').select('*').eq('id', id).single().then(({ data }) => {
+    sb.from('addresses').select('*').eq('id', id).single().then(({ data }) => {
       selectedAddress = data;
     });
   }
@@ -131,7 +131,7 @@
 
   async function saveNewAddress(e) {
     e.preventDefault();
-    const { data, error } = await supabase.from('addresses').insert({
+    const { data, error } = await sb.from('addresses').insert({
       user_id: Auth.currentUser.id,
       name: document.getElementById('addrName').value,
       phone: document.getElementById('addrPhone').value,
@@ -189,7 +189,7 @@
     // Get full address info
     let addr = selectedAddress;
     if (!addr.name) {
-      const { data } = await supabase.from('addresses').select('*').eq('id', addr.id).single();
+      const { data } = await sb.from('addresses').select('*').eq('id', addr.id).single();
       addr = data;
     }
 
@@ -202,7 +202,7 @@
     const orderNumber = 'BN' + Date.now().toString(36).toUpperCase();
 
     // Create order
-    const { data: order, error } = await supabase.from('orders').insert({
+    const { data: order, error } = await sb.from('orders').insert({
       user_id: Auth.currentUser.id,
       order_number: orderNumber,
       status: 'pending',
@@ -235,14 +235,14 @@
         quantity: item.qty
       };
     });
-    await supabase.from('order_items').insert(items);
+    await sb.from('order_items').insert(items);
 
     // Clear cart
     localStorage.setItem('baerynia_cart', '[]');
 
     // Simulate payment
     if (confirm(`订单创建成功！\n订单号: ${orderNumber}\n金额: ¥${total.toLocaleString()}\n\n是否立即模拟支付？`)) {
-      await supabase.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', order.id);
+      await sb.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', order.id);
       alert('支付成功！');
     }
     window.location.href = 'orders.html';

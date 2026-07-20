@@ -28,8 +28,8 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js?v=2"></script>
-<script src="auth.js?v=2"></script>
+<script src="supabase-client.js?v=3"></script>
+<script src="auth.js?v=3"></script>
 <script>
   const STATUS_MAP = {
     pending: '待付款', paid: '待发货', processing: '处理中',
@@ -48,7 +48,7 @@
   });
 
   async function loadOrders() {
-    const { data: orders } = await supabase.from('orders').select('*')
+    const { data: orders } = await sb.from('orders').select('*')
       .eq('user_id', Auth.currentUser.id).order('created_at', { ascending: false });
 
     if (!orders || orders.length === 0) {
@@ -61,7 +61,7 @@
     }
 
     for (let order of orders) {
-      const { data: items } = await supabase.from('order_items').select('*').eq('order_id', order.id);
+      const { data: items } = await sb.from('order_items').select('*').eq('order_id', order.id);
       order.items = items || [];
     }
     allOrders = orders;
@@ -112,14 +112,14 @@
 
   async function payOrder(orderId) {
     if (confirm('模拟支付：确认已完成支付？')) {
-      await supabase.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', orderId);
+      await sb.from('orders').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', orderId);
       loadOrders();
     }
   }
 
   async function confirmReceive(orderId) {
     if (confirm('确认已收到商品？')) {
-      await supabase.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', orderId);
+      await sb.from('orders').update({ status: 'delivered', delivered_at: new Date().toISOString() }).eq('id', orderId);
       loadOrders();
     }
   }
